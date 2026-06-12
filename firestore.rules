@@ -1,0 +1,40 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users – anyone can read their own doc, write their own
+    match /users/{userId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && (request.auth.uid == userId || isAdmin());
+    }
+
+    // Pets – public read, shelter/admin write
+    match /pets/{petId} {
+      allow read: if true;
+      allow create: if request.auth != null && (isShelter() || isAdmin());
+      allow update: if request.auth != null && (isOwnerShelter(resource) || isAdmin());
+      allow delete: if request.auth != null && (isOwnerShelter(resource) || isAdmin());
+    }
+
+    // Applications – user submits, shelter/admin reads and updates
+    match /applications/{appId} {
+      allow create: if request.auth != null;
+      allow read: if request.auth != null && (
+        resource.data.userId == request.auth.uid ||
+        isShelter() || isAdmin()
+      );
+      allow update: if request.auth != null && (isShelter() || isAdmin());
+    }
+
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+    function isShelter() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'shelter';
+    }
+    function isOwnerShelter(res) {
+      return res.data.shelterId == request.auth.uid;
+    }
+  }
+}

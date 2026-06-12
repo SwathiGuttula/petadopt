@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Dashboard – PetAdopt</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <style>
+    .dash-layout { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 70px); }
+    .sidebar { background: var(--brown); padding: 2rem 1rem; }
+    .sidebar h3 { font-size: 0.8rem; opacity: 0.5; font-weight: 700; margin-bottom: 1rem; letter-spacing: 1px; text-transform: uppercase; color: white; }
+    .sidebar-link { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--radius-sm); cursor: pointer; color: rgba(255,255,255,0.8); font-weight: 700; font-size: 0.9rem; transition: all 0.2s; margin-bottom: 4px; }
+    .sidebar-link:hover, .sidebar-link.active { background: rgba(255,255,255,0.15); color: white; }
+    .main-content { padding: 2rem; background: var(--cream); overflow-y: auto; }
+    .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .stat-card { background: white; border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow); text-align: center; }
+    .stat-card .num { font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 700; color: var(--orange); }
+    .stat-card .lbl { font-size: 0.82rem; color: var(--brown-light); font-weight: 700; }
+    .tab-section { display: none; }
+    .tab-section.active { display: block; }
+    @media(max-width:768px){ .dash-layout { grid-template-columns: 1fr; } .sidebar { display: none; } }
+    .admin-badge { background: var(--orange); color: white; padding: 3px 10px; border-radius: 50px; font-size: 0.75rem; font-weight: 700; }
+  </style>
+</head>
+<body>
+<nav class="navbar" id="main-navbar"></nav>
+
+<div class="dash-layout">
+  <div class="sidebar">
+    <h3>Admin Panel</h3>
+    <div class="sidebar-link active" onclick="showTab('overview',this)">📊 Overview</div>
+    <div class="sidebar-link" onclick="showTab('users',this)">👥 Users</div>
+    <div class="sidebar-link" onclick="showTab('pets',this)">🐾 All Pets</div>
+    <div class="sidebar-link" onclick="showTab('applications',this)">📋 All Applications</div>
+  </div>
+
+  <div class="main-content">
+    <!-- OVERVIEW -->
+    <div class="tab-section active" id="tab-overview">
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem">
+        <h2 class="section-title">Admin Dashboard</h2>
+        <span class="admin-badge">ADMIN</span>
+      </div>
+      <div class="stat-cards">
+        <div class="stat-card"><div class="num" id="s-users">–</div><div class="lbl">Total Users</div></div>
+        <div class="stat-card"><div class="num" id="s-shelters">–</div><div class="lbl">Shelters</div></div>
+        <div class="stat-card"><div class="num" id="s-pets">–</div><div class="lbl">Total Pets</div></div>
+        <div class="stat-card"><div class="num" id="s-available">–</div><div class="lbl">Available</div></div>
+        <div class="stat-card"><div class="num" id="s-apps">–</div><div class="lbl">Applications</div></div>
+        <div class="stat-card"><div class="num" id="s-approved">–</div><div class="lbl">Approved</div></div>
+      </div>
+      <div class="card">
+        <h3 style="margin-bottom:1rem;color:var(--brown)">🛠️ Admin Actions</h3>
+        <div style="display:flex;gap:1rem;flex-wrap:wrap">
+          <button class="btn btn-primary" onclick="showTab('users')">Manage Users</button>
+          <button class="btn btn-teal" onclick="showTab('pets')">Moderate Pets</button>
+          <button class="btn btn-outline" onclick="showTab('applications')">Review Applications</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- USERS -->
+    <div class="tab-section" id="tab-users">
+      <h2 class="section-title" style="margin-bottom:1.5rem">👥 All Users</h2>
+      <div id="users-list"></div>
+    </div>
+
+    <!-- PETS -->
+    <div class="tab-section" id="tab-pets">
+      <h2 class="section-title" style="margin-bottom:1.5rem">🐾 All Pet Listings</h2>
+      <div id="all-pets-list"></div>
+    </div>
+
+    <!-- APPLICATIONS -->
+    <div class="tab-section" id="tab-applications">
+      <h2 class="section-title" style="margin-bottom:1.5rem">📋 All Adoption Applications</h2>
+      <div id="all-apps-list"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script src="../js/firebase-config.js"></script>
+<script src="../js/app.js"></script>
+<script>
+  function showTab(tab, el) {
+    document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+    if (el) el.classList.add('active');
+    if (tab === 'users') loadUsers();
+    if (tab === 'pets') loadAllPets();
+    if (tab === 'applications') loadAllApps();
+  }
+
+  requireRole(['admin'], async () => {
+    loadStats();
+  });
+
+  async function loadStats() {
+    const [uSnap, pSnap, aSnap] = await Promise.all([
+      db.collection('users').get(),
+      db.collection('pets').get(),
+      db.collection('applications').get()
+    ]);
+    document.getElementById('s-users').textContent = uSnap.size;
+    document.getElementById('s-shelters').textContent = uSnap.docs.filter(d => d.data().role === 'shelter').length;
+    document.getElementById('s-pets').textContent = pSnap.size;
+    document.getElementById('s-available').textContent = pSnap.docs.filter(d => d.data().status === 'Available').length;
+    document.getElementById('s-apps').textContent = aSnap.size;
+    document.getElementById('s-approved').textContent = aSnap.docs.filter(d => d.data().status === 'Approved').length;
+  }
+
+  async function loadUsers() {
+    const list = document.getElementById('users-list');
+    const snap = await db.collection('users').get();
+    const roleColors = { adopter: 'badge-teal', shelter: 'badge-orange', admin: 'status-approved' };
+    list.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Location</th><th>Action</th></tr></thead><tbody>
+      ${snap.docs.map(doc => {
+        const u = doc.data();
+        return `<tr>
+          <td><strong>${u.name || '–'}</strong></td>
+          <td>${u.email}</td>
+          <td><span class="badge ${roleColors[u.role] || ''}">${u.role}</span></td>
+          <td>${u.location || '–'}</td>
+          <td>
+            <select onchange="changeRole('${doc.id}',this.value)" style="border:1px solid #ddd;border-radius:8px;padding:4px 8px;font-size:0.82rem">
+              <option value="" disabled selected>Change Role</option>
+              <option>adopter</option>
+              <option>shelter</option>
+              <option>admin</option>
+            </select>
+          </td>
+        </tr>`;
+      }).join('')}
+    </tbody></table></div>`;
+  }
+
+  async function changeRole(uid, role) {
+    if (!role) return;
+    await db.collection('users').doc(uid).update({ role });
+    showToast('Role updated to ' + role, 'success');
+    loadUsers();
+  }
+
+  async function loadAllPets() {
+    const list = document.getElementById('all-pets-list');
+    const snap = await db.collection('pets').get();
+    list.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Name</th><th>Breed</th><th>Location</th><th>Shelter</th><th>Status</th><th>Action</th></tr></thead><tbody>
+      ${snap.docs.map(doc => {
+        const p = doc.data();
+        return `<tr>
+          <td><strong>${p.name}</strong></td>
+          <td>${p.breed}</td>
+          <td>${p.location}</td>
+          <td>${p.shelterName || '–'}</td>
+          <td><span class="badge ${p.status === 'Available' ? 'badge-available' : 'badge-adopted'}">${p.status}</span></td>
+          <td><button class="btn btn-sm" style="background:var(--red);color:white" onclick="adminDeletePet('${doc.id}','${p.name}')">Remove</button></td>
+        </tr>`;
+      }).join('')}
+    </tbody></table></div>`;
+  }
+
+  async function adminDeletePet(id, name) {
+    if (!confirm(`Remove ${name} from the platform?`)) return;
+    await db.collection('pets').doc(id).delete();
+    showToast(name + ' removed', 'success');
+    loadAllPets();
+    loadStats();
+  }
+
+  async function loadAllApps() {
+    const list = document.getElementById('all-apps-list');
+    const snap = await db.collection('applications').orderBy('submittedAt', 'desc').get();
+    const statusMap = { Submitted: 'status-submitted', 'Under Review': 'status-review', Approved: 'status-approved', Rejected: 'status-rejected' };
+    list.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Pet</th><th>Applicant</th><th>Shelter</th><th>Date</th><th>Status</th><th>Update</th></tr></thead><tbody>
+      ${snap.docs.map(doc => {
+        const a = doc.data();
+        const date = a.submittedAt?.toDate().toLocaleDateString('en-IN') || 'N/A';
+        return `<tr>
+          <td><strong>${a.petName}</strong></td>
+          <td>${a.applicantName || a.userEmail}</td>
+          <td>${a.shelterName}</td>
+          <td>${date}</td>
+          <td><span class="badge ${statusMap[a.status] || ''}">${a.status}</span></td>
+          <td>
+            <select onchange="updateStatus('${doc.id}',this.value)" style="border:1px solid #ddd;border-radius:8px;padding:4px 8px;font-size:0.82rem">
+              <option value="" disabled selected>Update</option>
+              <option>Submitted</option>
+              <option>Under Review</option>
+              <option>Approved</option>
+              <option>Rejected</option>
+            </select>
+          </td>
+        </tr>`;
+      }).join('')}
+    </tbody></table></div>`;
+  }
+
+  async function updateStatus(id, status) {
+    if (!status) return;
+    await db.collection('applications').doc(id).update({ status });
+    showToast('Status updated', 'success');
+    loadAllApps();
+  }
+</script>
+</body>
+</html>

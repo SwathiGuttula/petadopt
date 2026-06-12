@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PetAdopt – Find Your Furry Friend 🐾</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>"/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    /* HERO */
+    .hero {
+      min-height: 92vh;
+      background: linear-gradient(135deg, #FFF8F0 0%, #FFF3EE 40%, #E0F2F1 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 3rem 1.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, rgba(255,112,67,0.12) 0%, transparent 70%);
+      top: -100px; right: -100px;
+      border-radius: 50%;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(38,166,154,0.1) 0%, transparent 70%);
+      bottom: -100px; left: -100px;
+      border-radius: 50%;
+    }
+    .hero-content { position: relative; z-index: 1; max-width: 720px; }
+    .hero-paws {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      animation: float 3s ease-in-out infinite;
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-12px); }
+    }
+    .hero h1 {
+      font-size: 3.5rem;
+      line-height: 1.1;
+      color: var(--brown);
+      margin-bottom: 1.2rem;
+    }
+    .hero h1 em {
+      font-style: italic;
+      color: var(--orange);
+    }
+    .hero p {
+      font-size: 1.15rem;
+      color: var(--brown-light);
+      margin-bottom: 2rem;
+      line-height: 1.7;
+    }
+    .hero-btns { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+
+    /* STATS */
+    .stats-bar {
+      background: var(--orange);
+      padding: 1.5rem 2rem;
+      display: flex;
+      justify-content: center;
+      gap: 4rem;
+      flex-wrap: wrap;
+    }
+    .stat { text-align: center; color: white; }
+    .stat-num { font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 700; }
+    .stat-label { font-size: 0.85rem; opacity: 0.9; font-weight: 600; }
+
+    /* HOW IT WORKS */
+    .how-section { padding: 5rem 1.5rem; background: var(--warm-white); }
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 2rem;
+      max-width: 900px;
+      margin: 2.5rem auto 0;
+    }
+    .step-card {
+      text-align: center;
+      padding: 2rem 1.5rem;
+      background: var(--cream);
+      border-radius: var(--radius);
+      transition: transform 0.3s;
+    }
+    .step-card:hover { transform: translateY(-4px); }
+    .step-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .step-num {
+      display: inline-block;
+      background: var(--orange);
+      color: white;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      font-size: 0.8rem;
+      font-weight: 900;
+      line-height: 28px;
+      margin-bottom: 0.8rem;
+    }
+    .step-card h3 { font-size: 1.1rem; margin-bottom: 0.5rem; color: var(--brown); }
+    .step-card p { font-size: 0.9rem; color: var(--brown-light); line-height: 1.6; }
+
+    /* FEATURED PETS */
+    .featured-section { padding: 5rem 1.5rem; }
+    .featured-header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    .featured-header h2 { font-size: 2.2rem; color: var(--brown); margin-bottom: 0.3rem; }
+    .featured-header p { color: var(--brown-light); }
+
+    /* WHY SECTION */
+    .why-section {
+      padding: 5rem 1.5rem;
+      background: linear-gradient(135deg, var(--teal-pale), var(--orange-pale));
+    }
+    .why-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1.5rem;
+      max-width: 1000px;
+      margin: 2.5rem auto 0;
+    }
+    .why-card {
+      background: var(--warm-white);
+      border-radius: var(--radius);
+      padding: 1.8rem;
+      box-shadow: var(--shadow);
+    }
+    .why-icon { font-size: 2.2rem; margin-bottom: 0.8rem; }
+    .why-card h3 { font-size: 1.1rem; margin-bottom: 0.4rem; color: var(--brown); }
+    .why-card p { font-size: 0.88rem; color: var(--brown-light); line-height: 1.6; }
+
+    /* CTA */
+    .cta-section {
+      padding: 5rem 1.5rem;
+      text-align: center;
+      background: var(--brown);
+      color: white;
+    }
+    .cta-section h2 { font-size: 2.2rem; margin-bottom: 1rem; color: white; }
+    .cta-section p { font-size: 1.05rem; opacity: 0.85; margin-bottom: 2rem; }
+
+    /* FOOTER */
+    footer {
+      background: var(--warm-white);
+      border-top: 2px solid var(--orange-pale);
+      padding: 2rem 1.5rem;
+      text-align: center;
+      color: var(--brown-light);
+      font-size: 0.88rem;
+    }
+    footer strong { color: var(--orange); }
+  </style>
+</head>
+<body>
+
+<nav class="navbar" id="main-navbar"></nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-paws">🐾</div>
+    <h1>Find Your <em>Perfect</em> Furry Companion</h1>
+    <p>Thousands of loving pets are waiting for a home just like yours. Browse, connect, and give a pet the life they deserve — all in one warm place.</p>
+    <div class="hero-btns">
+      <a href="pages/browse.html" class="btn btn-primary btn-lg">🐶 Browse Pets</a>
+      <a href="pages/register.html" class="btn btn-outline btn-lg">🏠 I Want to Adopt</a>
+    </div>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stat"><div class="stat-num">500+</div><div class="stat-label">Pets Available</div></div>
+  <div class="stat"><div class="stat-num">1,200+</div><div class="stat-label">Happy Adoptions</div></div>
+  <div class="stat"><div class="stat-num">80+</div><div class="stat-label">Shelter Partners</div></div>
+  <div class="stat"><div class="stat-num">4.9★</div><div class="stat-label">User Rating</div></div>
+</div>
+
+<!-- FEATURED PETS -->
+<section class="featured-section">
+  <div class="featured-header">
+    <h2>🌟 Featured Pets</h2>
+    <p>These adorable friends are looking for their forever home</p>
+  </div>
+  <div class="page-wrapper" style="padding-top:0">
+    <div class="pets-grid" id="featured-pets">
+      <div class="empty-state"><div class="paw-loader">🐾</div><p>Loading pets...</p></div>
+    </div>
+    <div class="text-center mt-3">
+      <a href="pages/browse.html" class="btn btn-teal btn-lg">See All Pets →</a>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-section">
+  <div class="page-wrapper" style="padding-top:0">
+    <div class="featured-header">
+      <h2>How It Works</h2>
+      <p>Adoption made simple, warm, and transparent</p>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">1</div>
+        <div class="step-icon">🔍</div>
+        <h3>Browse & Filter</h3>
+        <p>Search pets by breed, age, gender, and location. Find the one that speaks to your heart.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">2</div>
+        <div class="step-icon">📋</div>
+        <h3>Apply Online</h3>
+        <p>Fill out a simple adoption application. No paperwork, no queues — just a few clicks.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">3</div>
+        <div class="step-icon">💬</div>
+        <h3>Chat with Shelter</h3>
+        <p>Connect directly with the shelter. Ask questions, schedule a visit, build a relationship.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">4</div>
+        <div class="step-icon">🏡</div>
+        <h3>Welcome Home!</h3>
+        <p>Once approved, your new family member comes home. The journey begins!</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHY PETADOPT -->
+<section class="why-section">
+  <div class="page-wrapper" style="padding-top:0">
+    <div class="featured-header">
+      <h2>Why PetAdopt?</h2>
+      <p>We make every step of adoption safe, simple, and joyful</p>
+    </div>
+    <div class="why-grid">
+      <div class="why-card">
+        <div class="why-icon">✅</div>
+        <h3>Verified Shelters</h3>
+        <p>All shelters are manually verified by our admin team. You only see trusted, legitimate listings.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">📁</div>
+        <h3>Full Pet Health Info</h3>
+        <p>Vaccination records, medical history, and more — all documented and visible before you apply.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">⚡</div>
+        <h3>Real-Time Updates</h3>
+        <p>Get instant notifications on application status changes, messages, and pet availability.</p>
+      </div>
+      <div class="why-card">
+        <div class="why-icon">🔒</div>
+        <h3>Safe & Secure</h3>
+        <p>Your data is encrypted and protected. We never share your information with third parties.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2>Ready to Change a Life? 🐾</h2>
+  <p>Join thousands of pet lovers who found their perfect companion on PetAdopt.</p>
+  <a href="pages/register.html" class="btn btn-primary btn-lg">Get Started – It's Free</a>
+</section>
+
+<footer>
+  <p>Made with ❤️ for pets everywhere &nbsp;·&nbsp; <strong>PetAdopt</strong> &nbsp;·&nbsp; © 2025 SwathiGuttula</p>
+</footer>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/app.js"></script>
+<script>
+  // Load featured pets
+  async function loadFeaturedPets() {
+    const grid = document.getElementById('featured-pets');
+    try {
+      const snap = await db.collection('pets').where('status', '==', 'Available').limit(3).get();
+      if (snap.empty) {
+        grid.innerHTML = '<div class="empty-state"><div class="empty-icon">🐾</div><p>No pets yet – check back soon!</p></div>';
+        return;
+      }
+      grid.innerHTML = '';
+      snap.forEach(doc => {
+        const p = doc.data();
+        grid.innerHTML += `
+          <div class="pet-card" onclick="window.location='pages/pet-detail.html?id=${doc.id}'">
+            <img src="${p.image || 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600'}" alt="${p.name}" loading="lazy"/>
+            <div class="pet-card-body">
+              <div class="pet-card-name">${p.name}</div>
+              <div class="pet-card-info">
+                <span class="badge badge-orange">🐾 ${p.breed}</span>
+                <span class="badge badge-teal">📍 ${p.location}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center">
+                <span class="badge badge-available">● Available</span>
+                <span style="font-size:0.88rem;color:var(--brown-light)">${p.age} · ${p.gender}</span>
+              </div>
+            </div>
+          </div>`;
+      });
+    } catch(e) {
+      grid.innerHTML = '<div class="empty-state"><p>Could not load pets. Check Firebase config.</p></div>';
+    }
+  }
+  loadFeaturedPets();
+</script>
+</body>
+</html>

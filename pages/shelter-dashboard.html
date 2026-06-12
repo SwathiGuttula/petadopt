@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Shelter Dashboard – PetAdopt</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <style>
+    .dash-layout { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 70px); }
+    .sidebar { background: var(--brown); color: white; padding: 2rem 1rem; }
+    .sidebar h3 { font-size: 1rem; opacity: 0.6; font-weight: 700; margin-bottom: 1rem; letter-spacing: 1px; text-transform: uppercase; }
+    .sidebar-link { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: var(--radius-sm); cursor: pointer; color: rgba(255,255,255,0.8); font-weight: 700; font-size: 0.9rem; transition: all 0.2s; margin-bottom: 4px; }
+    .sidebar-link:hover, .sidebar-link.active { background: rgba(255,255,255,0.15); color: white; }
+    .main-content { padding: 2rem; background: var(--cream); overflow-y: auto; }
+    .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .stat-card { background: white; border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow); text-align: center; }
+    .stat-card .num { font-family: 'Fraunces', serif; font-size: 2.5rem; font-weight: 700; color: var(--orange); }
+    .stat-card .lbl { font-size: 0.85rem; color: var(--brown-light); font-weight: 700; }
+    .tab-section { display: none; }
+    .tab-section.active { display: block; }
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .modal-box { background: white; border-radius: var(--radius); padding: 2rem; width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto; }
+    .modal-box h2 { margin-bottom: 1.5rem; color: var(--brown); }
+    @media(max-width:768px){ .dash-layout { grid-template-columns: 1fr; } .sidebar { display: none; } }
+    .action-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem; }
+    .pet-list-item { background: white; border-radius: var(--radius-sm); padding: 1rem 1.2rem; box-shadow: var(--shadow); margin-bottom: 0.8rem; display: flex; align-items: center; gap: 1rem; }
+    .pet-list-img { width: 60px; height: 60px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+    .pet-list-info { flex: 1; }
+    .pet-list-name { font-weight: 800; color: var(--brown); }
+    .pet-list-sub { font-size: 0.82rem; color: var(--brown-light); }
+    .pet-list-actions { display: flex; gap: 6px; }
+  </style>
+</head>
+<body>
+<nav class="navbar" id="main-navbar"></nav>
+
+<div class="dash-layout">
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <h3>Dashboard</h3>
+    <div class="sidebar-link active" onclick="showTab('overview',this)">📊 Overview</div>
+    <div class="sidebar-link" onclick="showTab('pets',this)">🐾 My Pets</div>
+    <div class="sidebar-link" onclick="showTab('applications',this)">📋 Applications</div>
+    <div class="sidebar-link" onclick="showTab('add-pet',this)">➕ Add Pet</div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main-content">
+    <!-- OVERVIEW -->
+    <div class="tab-section active" id="tab-overview">
+      <h2 class="section-title">Welcome back! 👋</h2>
+      <p style="color:var(--brown-light);margin-bottom:1.5rem" id="shelter-welcome">Loading your shelter info...</p>
+      <div class="stat-cards">
+        <div class="stat-card"><div class="num" id="stat-total-pets">–</div><div class="lbl">Total Pets</div></div>
+        <div class="stat-card"><div class="num" id="stat-available">–</div><div class="lbl">Available</div></div>
+        <div class="stat-card"><div class="num" id="stat-adopted">–</div><div class="lbl">Adopted</div></div>
+        <div class="stat-card"><div class="num" id="stat-apps">–</div><div class="lbl">Applications</div></div>
+      </div>
+    </div>
+
+    <!-- MY PETS -->
+    <div class="tab-section" id="tab-pets">
+      <div class="action-bar">
+        <h2 class="section-title">🐾 My Pet Listings</h2>
+        <button class="btn btn-primary" onclick="showTab('add-pet')">➕ Add New Pet</button>
+      </div>
+      <div id="shelter-pets-list"></div>
+    </div>
+
+    <!-- APPLICATIONS -->
+    <div class="tab-section" id="tab-applications">
+      <h2 class="section-title" style="margin-bottom:1.5rem">📋 Adoption Applications</h2>
+      <div id="shelter-apps-list"></div>
+    </div>
+
+    <!-- ADD PET -->
+    <div class="tab-section" id="tab-add-pet">
+      <h2 class="section-title" style="margin-bottom:1.5rem">➕ Add a Pet</h2>
+      <div class="card" style="max-width:600px">
+        <form id="add-pet-form">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+            <div class="form-group"><label class="form-label">Pet Name *</label><input class="form-control" id="p-name" required/></div>
+            <div class="form-group"><label class="form-label">Breed *</label><input class="form-control" id="p-breed" required/></div>
+            <div class="form-group"><label class="form-label">Age *</label><input class="form-control" id="p-age" placeholder="e.g. 2 years" required/></div>
+            <div class="form-group"><label class="form-label">Gender *</label>
+              <select class="form-control" id="p-gender"><option>Male</option><option>Female</option></select>
+            </div>
+          </div>
+          <div class="form-group"><label class="form-label">Location *</label><input class="form-control" id="p-location" required/></div>
+          <div class="form-group"><label class="form-label">Description</label><textarea class="form-control" id="p-desc" rows="3"></textarea></div>
+          <div class="form-group"><label class="form-label">Medical History</label><textarea class="form-control" id="p-medical" rows="2"></textarea></div>
+          <div class="form-group"><label class="form-label">Pet Image URL</label><input class="form-control" id="p-image" placeholder="https://..."/></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+            <div class="form-group"><label class="form-label">Status</label>
+              <select class="form-control" id="p-status"><option>Available</option><option>Adopted</option></select>
+            </div>
+            <div class="form-group" style="display:flex;align-items:center;gap:8px;padding-top:1.6rem">
+              <input type="checkbox" id="p-vacc" style="width:18px;height:18px"/>
+              <label for="p-vacc" style="font-weight:700;color:var(--brown)">Vaccinated?</label>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary" id="add-pet-btn">Add Pet 🐾</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script src="../js/firebase-config.js"></script>
+<script src="../js/app.js"></script>
+<script>
+  let shelterUser = null;
+  let shelterData = null;
+
+  function showTab(tab, el) {
+    document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+    if (el) el.classList.add('active');
+    if (tab === 'pets') loadShelterPets();
+    if (tab === 'applications') loadShelterApps();
+  }
+
+  requireRole(['shelter', 'admin'], async (user, role, data) => {
+    shelterUser = user;
+    shelterData = data;
+    document.getElementById('shelter-welcome').textContent = `${data.shelterName || data.name} · ${data.location || ''}`;
+    loadStats();
+  });
+
+  async function loadStats() {
+    const pSnap = await db.collection('pets').where('shelterId', '==', shelterUser.uid).get();
+    const aSnap = await db.collection('applications').where('shelterId', '==', shelterUser.uid).get();
+    document.getElementById('stat-total-pets').textContent = pSnap.size;
+    document.getElementById('stat-available').textContent = pSnap.docs.filter(d => d.data().status === 'Available').length;
+    document.getElementById('stat-adopted').textContent = pSnap.docs.filter(d => d.data().status === 'Adopted').length;
+    document.getElementById('stat-apps').textContent = aSnap.size;
+  }
+
+  async function loadShelterPets() {
+    const list = document.getElementById('shelter-pets-list');
+    list.innerHTML = '<div class="paw-loader">🐾</div>';
+    const snap = await db.collection('pets').where('shelterId', '==', shelterUser.uid).get();
+    if (snap.empty) { list.innerHTML = '<div class="empty-state"><div class="empty-icon">🐾</div><h3>No pets listed yet</h3><p>Add your first pet!</p></div>'; return; }
+    list.innerHTML = snap.docs.map(doc => {
+      const p = doc.data();
+      return `<div class="pet-list-item">
+        <img class="pet-list-img" src="${p.image || 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=200'}" alt="${p.name}"/>
+        <div class="pet-list-info">
+          <div class="pet-list-name">${p.name}</div>
+          <div class="pet-list-sub">${p.breed} · ${p.age} · ${p.gender} · ${p.location}</div>
+        </div>
+        <span class="badge ${p.status === 'Available' ? 'badge-available' : 'badge-adopted'}">${p.status}</span>
+        <div class="pet-list-actions">
+          <button class="btn btn-outline btn-sm" onclick="toggleStatus('${doc.id}','${p.status}')">
+            ${p.status === 'Available' ? 'Mark Adopted' : 'Mark Available'}
+          </button>
+          <button class="btn btn-sm" style="background:var(--red);color:white" onclick="deletePet('${doc.id}','${p.name}')">Delete</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function toggleStatus(id, current) {
+    const next = current === 'Available' ? 'Adopted' : 'Available';
+    await db.collection('pets').doc(id).update({ status: next });
+    showToast(`Status updated to ${next}`, 'success');
+    loadShelterPets();
+    loadStats();
+  }
+
+  async function deletePet(id, name) {
+    if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
+    await db.collection('pets').doc(id).delete();
+    showToast(`${name} removed`, 'success');
+    loadShelterPets();
+    loadStats();
+  }
+
+  async function loadShelterApps() {
+    const list = document.getElementById('shelter-apps-list');
+    list.innerHTML = '<div class="paw-loader">🐾</div>';
+    const snap = await db.collection('applications').where('shelterId', '==', shelterUser.uid).orderBy('submittedAt', 'desc').get();
+    if (snap.empty) { list.innerHTML = '<div class="empty-state"><div class="empty-icon">📋</div><h3>No applications yet</h3></div>'; return; }
+    const statusMap = { Submitted: 'status-submitted', 'Under Review': 'status-review', Approved: 'status-approved', Rejected: 'status-rejected' };
+    list.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Pet</th><th>Applicant</th><th>Email</th><th>Date</th><th>Status</th><th>Action</th></tr></thead><tbody>
+      ${snap.docs.map(doc => {
+        const a = doc.data();
+        const date = a.submittedAt?.toDate().toLocaleDateString('en-IN') || 'N/A';
+        return `<tr>
+          <td><strong>${a.petName}</strong></td>
+          <td>${a.applicantName}</td>
+          <td>${a.userEmail}</td>
+          <td>${date}</td>
+          <td><span class="badge ${statusMap[a.status] || ''}">${a.status}</span></td>
+          <td>
+            <select onchange="updateAppStatus('${doc.id}',this.value)" style="border:1px solid #ddd;border-radius:8px;padding:4px 8px;font-size:0.82rem">
+              <option value="" disabled selected>Update</option>
+              <option>Submitted</option>
+              <option>Under Review</option>
+              <option>Approved</option>
+              <option>Rejected</option>
+            </select>
+          </td>
+        </tr>`;
+      }).join('')}
+    </tbody></table></div>`;
+  }
+
+  async function updateAppStatus(id, status) {
+    if (!status) return;
+    await db.collection('applications').doc(id).update({ status });
+    showToast('Status updated to ' + status, 'success');
+    loadShelterApps();
+  }
+
+  document.getElementById('add-pet-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('add-pet-btn');
+    btn.textContent = 'Adding...'; btn.disabled = true;
+    try {
+      await db.collection('pets').add({
+        name: document.getElementById('p-name').value,
+        breed: document.getElementById('p-breed').value,
+        age: document.getElementById('p-age').value,
+        gender: document.getElementById('p-gender').value,
+        location: document.getElementById('p-location').value,
+        description: document.getElementById('p-desc').value,
+        medicalHistory: document.getElementById('p-medical').value,
+        image: document.getElementById('p-image').value,
+        status: document.getElementById('p-status').value,
+        vaccinated: document.getElementById('p-vacc').checked,
+        shelterId: shelterUser.uid,
+        shelterName: shelterData.shelterName || shelterData.name,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      showToast('Pet added successfully!', 'success');
+      document.getElementById('add-pet-form').reset();
+      loadStats();
+    } catch(err) {
+      showToast('Error: ' + err.message, 'error');
+    }
+    btn.textContent = 'Add Pet 🐾'; btn.disabled = false;
+  });
+</script>
+</body>
+</html>

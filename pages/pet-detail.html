@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pet Details – PetAdopt</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <style>
+    .detail-hero {
+      background: var(--orange-pale);
+      padding: 2rem 1.5rem 0;
+    }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem;
+    }
+    @media(max-width:768px){ .detail-grid { grid-template-columns: 1fr; gap: 2rem; } }
+    .pet-image-wrap {
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-hover);
+      position: sticky;
+      top: 90px;
+      height: 420px;
+    }
+    .pet-image-wrap img { width: 100%; height: 100%; object-fit: cover; }
+    .pet-name { font-size: 2.4rem; margin-bottom: 0.3rem; }
+    .pet-shelter { color: var(--brown-light); font-size: 0.9rem; margin-bottom: 1.2rem; }
+    .pet-attrs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.8rem;
+      margin-bottom: 1.5rem;
+    }
+    .attr-pill {
+      background: var(--cream);
+      border: 2px solid var(--orange-pale);
+      border-radius: 50px;
+      padding: 6px 16px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--brown);
+    }
+    .info-section { margin-bottom: 1.5rem; }
+    .info-section h3 { font-size: 1.1rem; color: var(--brown); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 6px; }
+    .info-section p { color: var(--brown-light); line-height: 1.7; font-size: 0.95rem; }
+    .apply-box {
+      background: var(--warm-white);
+      border: 2px solid var(--orange-pale);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+    }
+    .apply-box h3 { margin-bottom: 0.5rem; color: var(--brown); }
+    .apply-box p { font-size: 0.88rem; color: var(--brown-light); margin-bottom: 1rem; }
+    #apply-btn { width: 100%; justify-content: center; }
+    .back-link { display: inline-flex; align-items: center; gap: 6px; color: var(--orange); font-weight: 700; margin-bottom: 1.5rem; font-size: 0.9rem; }
+    .back-link:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<nav class="navbar" id="main-navbar"></nav>
+
+<div class="page-wrapper" id="detail-page">
+  <div class="empty-state"><div class="paw-loader">🐾</div><p>Loading pet details...</p></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script src="../js/firebase-config.js"></script>
+<script src="../js/app.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const petId = params.get('id');
+
+  async function loadPet() {
+    const page = document.getElementById('detail-page');
+    if (!petId) { page.innerHTML = '<div class="empty-state"><h3>Pet not found</h3></div>'; return; }
+
+    try {
+      const doc = await db.collection('pets').doc(petId).get();
+      if (!doc.exists) { page.innerHTML = '<div class="empty-state"><h3>Pet not found</h3></div>'; return; }
+      const p = doc.data();
+
+      page.innerHTML = `
+        <a href="browse.html" class="back-link">← Back to Browse</a>
+        <div class="detail-grid">
+          <div>
+            <div class="pet-image-wrap">
+              <img src="${p.image || 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800'}" alt="${p.name}"/>
+            </div>
+          </div>
+          <div>
+            <h1 class="pet-name">${p.name}</h1>
+            <p class="pet-shelter">🏡 ${p.shelterName || 'Unknown Shelter'}</p>
+            <div class="pet-attrs">
+              <span class="attr-pill">🐾 ${p.breed}</span>
+              <span class="attr-pill">🎂 ${p.age}</span>
+              <span class="attr-pill">${p.gender === 'Male' ? '♂️' : '♀️'} ${p.gender}</span>
+              <span class="attr-pill">📍 ${p.location}</span>
+              <span class="badge ${p.status === 'Available' ? 'badge-available' : 'badge-adopted'}" style="font-size:0.9rem;padding:6px 16px">● ${p.status}</span>
+              ${p.vaccinated ? '<span class="badge badge-teal">✅ Vaccinated</span>' : '<span class="badge badge-pending">⚠️ Not Vaccinated</span>'}
+            </div>
+
+            <div class="info-section">
+              <h3>🐶 About ${p.name}</h3>
+              <p>${p.description || 'No description available.'}</p>
+            </div>
+
+            <div class="info-section">
+              <h3>🏥 Medical History</h3>
+              <p>${p.medicalHistory || 'No medical records available.'}</p>
+            </div>
+
+            <div class="apply-box" id="apply-box">
+              <h3>Ready to Adopt ${p.name}?</h3>
+              <p>Fill out a quick application and the shelter will get back to you soon.</p>
+              <button class="btn btn-primary btn-lg" id="apply-btn" onclick="handleApply()">
+                🐾 Apply to Adopt ${p.name}
+              </button>
+            </div>
+          </div>
+        </div>`;
+
+      // Check if already applied
+      auth.onAuthStateChanged(async user => {
+        if (!user) return;
+        const snap = await db.collection('applications').where('userId', '==', user.uid).where('petId', '==', petId).get();
+        if (!snap.empty) {
+          const btn = document.getElementById('apply-btn');
+          const status = snap.docs[0].data().status;
+          btn.textContent = `Already Applied – Status: ${status}`;
+          btn.disabled = true;
+          btn.style.opacity = '0.7';
+        }
+        if (p.status === 'Adopted') {
+          const btn = document.getElementById('apply-btn');
+          btn.textContent = '❤️ Already Adopted';
+          btn.disabled = true;
+          btn.style.background = '#9E9E9E';
+        }
+      });
+
+    } catch(e) {
+      page.innerHTML = '<div class="empty-state"><h3>Error loading pet</h3><p>' + e.message + '</p></div>';
+    }
+  }
+
+  function handleApply() {
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        showToast('Please login to apply for adoption', 'error');
+        setTimeout(() => window.location.href = 'login.html', 1500);
+        return;
+      }
+      window.location.href = `apply.html?id=${petId}`;
+    });
+  }
+
+  loadPet();
+</script>
+</body>
+</html>

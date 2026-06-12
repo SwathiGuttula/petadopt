@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Browse Pets – PetAdopt</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <style>
+    .browse-hero {
+      background: linear-gradient(135deg, var(--orange-pale), var(--teal-pale));
+      padding: 3rem 1.5rem;
+      text-align: center;
+    }
+    .browse-hero h1 { font-size: 2.2rem; margin-bottom: 0.4rem; }
+    .browse-hero p { color: var(--brown-light); }
+    .results-count { color: var(--brown-light); font-size: 0.9rem; font-weight: 700; margin-bottom: 1rem; }
+    .pet-type-tabs { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .tab-btn {
+      padding: 8px 20px;
+      border-radius: 50px;
+      border: 2px solid var(--orange-pale);
+      background: white;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 700;
+      font-size: 0.88rem;
+      cursor: pointer;
+      color: var(--brown-light);
+      transition: all 0.2s;
+    }
+    .tab-btn.active, .tab-btn:hover { background: var(--orange); color: white; border-color: var(--orange); }
+  </style>
+</head>
+<body>
+<nav class="navbar" id="main-navbar"></nav>
+
+<div class="browse-hero">
+  <h1>🐾 Find Your Perfect Pet</h1>
+  <p>Browse hundreds of loving animals waiting for a forever home</p>
+</div>
+
+<div class="page-wrapper">
+  <!-- Filters -->
+  <div class="filter-bar">
+    <div class="form-group">
+      <label class="form-label">Search by name</label>
+      <input type="text" class="form-control" id="search-name" placeholder="e.g. Mango..."/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Breed</label>
+      <input type="text" class="form-control" id="filter-breed" placeholder="e.g. Labrador"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Gender</label>
+      <select class="form-control" id="filter-gender">
+        <option value="">All Genders</option>
+        <option>Male</option>
+        <option>Female</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Location</label>
+      <input type="text" class="form-control" id="filter-location" placeholder="e.g. Hyderabad"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Status</label>
+      <select class="form-control" id="filter-status">
+        <option value="">All Status</option>
+        <option>Available</option>
+        <option>Adopted</option>
+      </select>
+    </div>
+    <div class="form-group" style="flex:0">
+      <label class="form-label">&nbsp;</label>
+      <button class="btn btn-primary" onclick="applyFilters()">🔍 Search</button>
+    </div>
+    <div class="form-group" style="flex:0">
+      <label class="form-label">&nbsp;</label>
+      <button class="btn btn-outline" onclick="resetFilters()">Reset</button>
+    </div>
+  </div>
+
+  <p class="results-count" id="results-count">Loading pets...</p>
+  <div class="pets-grid" id="pets-grid"></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script src="../js/firebase-config.js"></script>
+<script src="../js/app.js"></script>
+<script>
+  let allPets = [];
+
+  async function loadPets() {
+    showLoader();
+    try {
+      const snap = await db.collection('pets').get();
+      allPets = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderPets(allPets);
+    } catch(e) {
+      document.getElementById('pets-grid').innerHTML = '<div class="empty-state"><div class="empty-icon">😿</div><h3>Could not load pets</h3><p>Check your Firebase configuration.</p></div>';
+    }
+    hideLoader();
+  }
+
+  function renderPets(pets) {
+    const grid = document.getElementById('pets-grid');
+    const count = document.getElementById('results-count');
+    count.textContent = `Showing ${pets.length} pet${pets.length !== 1 ? 's' : ''}`;
+
+    if (pets.length === 0) {
+      grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="empty-icon">🐾</div><h3>No pets found</h3><p>Try different filters</p></div>';
+      return;
+    }
+
+    grid.innerHTML = pets.map(p => `
+      <div class="pet-card" onclick="window.location='pet-detail.html?id=${p.id}'">
+        <img src="${p.image || 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=600'}" alt="${p.name}" loading="lazy"/>
+        <div class="pet-card-body">
+          <div class="pet-card-name">${p.name}</div>
+          <div class="pet-card-info">
+            <span class="badge badge-orange">🐾 ${p.breed}</span>
+            <span class="badge badge-teal">📍 ${p.location}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <span class="badge ${p.status === 'Available' ? 'badge-available' : 'badge-adopted'}">● ${p.status}</span>
+            <span style="font-size:0.88rem;color:var(--brown-light)">${p.age} · ${p.gender}</span>
+          </div>
+          <button class="btn btn-primary btn-sm" style="width:100%;justify-content:center;margin-top:0.8rem">
+            View Details →
+          </button>
+        </div>
+      </div>`).join('');
+  }
+
+  function applyFilters() {
+    const name = document.getElementById('search-name').value.toLowerCase();
+    const breed = document.getElementById('filter-breed').value.toLowerCase();
+    const gender = document.getElementById('filter-gender').value;
+    const location = document.getElementById('filter-location').value.toLowerCase();
+    const status = document.getElementById('filter-status').value;
+
+    const filtered = allPets.filter(p => {
+      if (name && !p.name?.toLowerCase().includes(name)) return false;
+      if (breed && !p.breed?.toLowerCase().includes(breed)) return false;
+      if (gender && p.gender !== gender) return false;
+      if (location && !p.location?.toLowerCase().includes(location)) return false;
+      if (status && p.status !== status) return false;
+      return true;
+    });
+    renderPets(filtered);
+  }
+
+  function resetFilters() {
+    document.getElementById('search-name').value = '';
+    document.getElementById('filter-breed').value = '';
+    document.getElementById('filter-gender').value = '';
+    document.getElementById('filter-location').value = '';
+    document.getElementById('filter-status').value = '';
+    renderPets(allPets);
+  }
+
+  // Live search on keyup
+  ['search-name','filter-breed','filter-location'].forEach(id => {
+    document.getElementById(id).addEventListener('keyup', applyFilters);
+  });
+  ['filter-gender','filter-status'].forEach(id => {
+    document.getElementById(id).addEventListener('change', applyFilters);
+  });
+
+  loadPets();
+</script>
+</body>
+</html>

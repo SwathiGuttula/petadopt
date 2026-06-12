@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>My Applications – PetAdopt</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐾</text></svg>"/>
+  <link rel="stylesheet" href="../css/style.css"/>
+  <style>
+    .app-card { background: white; border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow); margin-bottom: 1rem; display: flex; align-items: center; gap: 1.5rem; transition: transform 0.2s; }
+    .app-card:hover { transform: translateY(-2px); }
+    .app-pet-img { width: 80px; height: 80px; border-radius: var(--radius-sm); object-fit: cover; flex-shrink: 0; }
+    .app-info { flex: 1; }
+    .app-pet-name { font-family: 'Fraunces', serif; font-size: 1.2rem; margin-bottom: 4px; }
+    .app-meta { font-size: 0.85rem; color: var(--brown-light); }
+    .app-status { text-align: right; }
+    @media(max-width:600px){ .app-card { flex-direction: column; align-items: flex-start; } .app-status { text-align: left; } }
+  </style>
+</head>
+<body>
+<nav class="navbar" id="main-navbar"></nav>
+<div class="page-wrapper">
+  <div class="page-header">
+    <h1>🐾 My Applications</h1>
+    <p>Track the status of your adoption applications</p>
+  </div>
+  <div id="apps-list"><div class="empty-state"><div class="paw-loader">🐾</div><p>Loading...</p></div></div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
+<script src="../js/firebase-config.js"></script>
+<script src="../js/app.js"></script>
+<script>
+  const statusMap = {
+    'Submitted': { cls: 'status-submitted', label: '📤 Submitted' },
+    'Under Review': { cls: 'status-review', label: '🔍 Under Review' },
+    'Approved': { cls: 'status-approved', label: '✅ Approved' },
+    'Rejected': { cls: 'status-rejected', label: '❌ Rejected' }
+  };
+
+  requireAuth(async user => {
+    const list = document.getElementById('apps-list');
+    try {
+      const snap = await db.collection('applications').where('userId', '==', user.uid).orderBy('submittedAt', 'desc').get();
+      if (snap.empty) {
+        list.innerHTML = `<div class="empty-state"><div class="empty-icon">🐾</div><h3>No applications yet</h3><p>Browse pets and apply for adoption!</p><a href="browse.html" class="btn btn-primary mt-2">Browse Pets</a></div>`;
+        return;
+      }
+
+      // Load pet images
+      const petIds = [...new Set(snap.docs.map(d => d.data().petId))];
+      const petImages = {};
+      await Promise.all(petIds.map(async id => {
+        const p = await db.collection('pets').doc(id).get();
+        petImages[id] = p.data()?.image || 'https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=200';
+      }));
+
+      list.innerHTML = snap.docs.map(doc => {
+        const a = doc.data();
+        const s = statusMap[a.status] || { cls: '', label: a.status };
+        const date = a.submittedAt?.toDate().toLocaleDateString('en-IN') || 'N/A';
+        return `
+          <div class="app-card">
+            <img class="app-pet-img" src="${petImages[a.petId]}" alt="${a.petName}"/>
+            <div class="app-info">
+              <div class="app-pet-name">${a.petName}</div>
+              <div class="app-meta">🏡 ${a.shelterName} &nbsp;·&nbsp; 📅 Applied on ${date}</div>
+            </div>
+            <div class="app-status">
+              <span class="badge ${s.cls}" style="font-size:0.85rem;padding:8px 16px">${s.label}</span>
+            </div>
+          </div>`;
+      }).join('');
+    } catch(e) {
+      list.innerHTML = '<div class="empty-state"><h3>Error loading applications</h3><p>' + e.message + '</p></div>';
+    }
+  });
+</script>
+</body>
+</html>
